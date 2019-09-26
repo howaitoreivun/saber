@@ -67,7 +67,7 @@ class BotOwner(commands.Cog, name='Владелец бота', command_attrs=dic
             'channel': ctx.channel,
             'author': ctx.author,
             'guild': ctx.guild,
-            'message': ctx.message,
+            'msg': ctx.message,
             '_': self._last_result
         }
 

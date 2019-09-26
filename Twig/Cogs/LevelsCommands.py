@@ -11,7 +11,7 @@ class LevelsCommands(commands.Cog, name='Опыт'):
     @commands.command(name='leaders', aliases=('lb', 'leaderboard'), brief='Топ пользователей по количеству опыта на счету')
     @commands.cooldown(1, 20, type=BucketType.user)
     async def _leaders(self, ctx):
-        data = await fetch_top5()
+        data = await fetch_top5(ctx.guild.id)
         data_len = len(data)
 
         embed = discord.Embed(colour=SECONDARY_COLOR, title=f'ТОП-{data_len} ЛИДЕРОВ')
@@ -21,7 +21,7 @@ class LevelsCommands(commands.Cog, name='Опыт'):
             balance = temp[1]
             pos = i+1
             user = await self.bot.fetch_user(temp[0])
-            embed.add_field(name=f'#{pos} | {user}', value=f'**{balance} опыта**', inline=False)
+            embed.add_field(name=f'#{pos} - {user.name}', value=f'**{balance} опыта**', inline=False)
 
             if i == 0:
                 embed.set_thumbnail(url=user.avatar_url)
@@ -42,7 +42,7 @@ class LevelsCommands(commands.Cog, name='Опыт'):
         if user.bot is True:
             return await ctx.send('Нет. Машинам нельзя иметь уровень.')
 
-        current_xp = await fetch_data('xp', 'user', user.id)
+        current_xp = await fetch_data(ctx.guild.id, 'xp', 'user', user.id)
 
         if current_xp is None:
             return await ctx.send(embed=discord.Embed(

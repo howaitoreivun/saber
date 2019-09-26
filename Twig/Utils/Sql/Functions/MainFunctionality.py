@@ -13,7 +13,7 @@ async def connect_sqlite(filename):
 async def init_sql():
     con = await aiosqlite.connect(f'./Twig/Utils/Sql/Data/{DEFAULT_DB_FILENAME}.sqlite')
 
-    await con.execute("CREATE TABLE IF NOT EXISTS data(user INTEGER, xp INTEGER, lastTimeEdited INTEGER)")
+    await con.execute("CREATE TABLE IF NOT EXISTS data(guild INTEGER, user INTEGER, xp INTEGER, lastTimeEdited INTEGER)")
     await con.commit()
 
     await con.close()
@@ -21,11 +21,11 @@ async def init_sql():
 
 
 # Добавить нового пользователя в таблицу
-async def add_user(user):
+async def add_user(guild, user):
     called_at = int(time.time() - 300)
     con = await connect_sqlite(DEFAULT_DB_FILENAME)
 
-    cur = await con.execute("INSERT INTO data VALUES(?, 0, ?)", (user, called_at))
+    cur = await con.execute("INSERT INTO data VALUES({0}, {1}, {2}, {3})".format(guild, user, 0, called_at))
     await con.commit()
 
     await cur.close()
@@ -33,10 +33,10 @@ async def add_user(user):
 
 
 # Удаляет пользователя из таблицы
-async def del_user(user):
+async def del_user(guild, user):
     con = await connect_sqlite(DEFAULT_DB_FILENAME)
 
-    cur = await con.execute("DELETE FROM data WHERE user=%s" % user)
+    cur = await con.execute("DELETE FROM data WHERE guild={0} AND user={1}".format(guild, user))
     await con.commit()
 
     await cur.close()
@@ -45,10 +45,11 @@ async def del_user(user):
 
 
 # Найти данные в таблице
-async def fetch_data(fetch_this, where_is, where_val):
+async def fetch_data(guild, fetch_this, where_is, where_val):
     con = await connect_sqlite(DEFAULT_DB_FILENAME)
-
-    cur = await con.execute(f"SELECT %s FROM data where %s=%s" % (fetch_this, where_is, where_val))
+    cur = await con.execute(
+        "SELECT {1} FROM data where guild={0} AND {2}={3}".format(guild, fetch_this, where_is, where_val)
+    )
     data = await cur.fetchall()
     new_data = []
 
@@ -69,9 +70,11 @@ async def fetch_data(fetch_this, where_is, where_val):
 
 
 # Обновление каких-либо параметров в БД
-async def update_data(update_this, update_to, where_is, where_val):
+async def update_data(guild, update_this, update_to, where_is, where_val):
     con = await connect_sqlite(DEFAULT_DB_FILENAME)
-    cur = await con.execute(f"UPDATE data SET %s=%s WHERE %s=%s" % (update_this, update_to, where_is, where_val))
+    cur = await con.execute(
+        "UPDATE data SET {1}={2} WHERE {3}={4} AND guild={0}".format(guild, update_this, update_to, where_is, where_val)
+    )
     await con.commit()
 
     await cur.close()
@@ -81,10 +84,10 @@ async def update_data(update_this, update_to, where_is, where_val):
 
 # Получит 5 пользователей, по возрастанию по очкам опыта
 # Возвращает список вида ['user.id $$$ xp-balance']...
-async def fetch_top5():
+async def fetch_top5(guild):
     con = await connect_sqlite(DEFAULT_DB_FILENAME)
 
-    cur = await con.execute('SELECT user, xp FROM data ORDER BY xp DESC Limit 5')
+    cur = await con.execute('SELECT user, xp FROM data WHERE guild={0} ORDER BY xp DESC LIMIT 5'.format(guild))
     data = await cur.fetchall()
 
     temp_data = []
